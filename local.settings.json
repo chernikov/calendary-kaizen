@@ -1,0 +1,13 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated",
+    "ReplicateApiKey": "r8_xxx...",
+    "ReplicateOwner": "chernikov",
+    "ReplicateTrainerModel": "replicate/fast-flux-trainer",
+    "ReplicateTrainerVersion": "f463fbfc97389e10a2f443a8a84b6953b1058eafbf0c9af4d84457ff07cb04db",
+    "WebhookUrl": "https://yourapp.azurewebsites.net/api/ReplicateWebHook",
+    "TelegramBotToken": ""
+  }
+}
