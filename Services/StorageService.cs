@@ -1,6 +1,8 @@
 using System.IO.Compression;
 using Azure.Data.Tables;
 using Azure.Storage.Blobs;
+using Azure.Storage.Blobs.Models;
+using Azure.Storage.Sas;
 using Azure.Storage.Queues;
 using CalendaryKaizen.Models;
 using Microsoft.Extensions.Configuration;
@@ -179,10 +181,34 @@ public class StorageService : IStorageService
         archiveStream.Position = 0;
         var archiveName = $"{chatId}/archive_{DateTime.UtcNow:yyyyMMddHHmmss}.zip";
         var archiveBlobClient = _dataBlobContainer.GetBlobClient(archiveName);
-        await archiveBlobClient.UploadAsync(archiveStream, overwrite: true);
+        
+        // Завантажуємо з публічним доступом
+        var uploadOptions = new Azure.Storage.Blobs.Models.BlobUploadOptions
+        {
+            HttpHeaders = new Azure.Storage.Blobs.Models.BlobHttpHeaders
+            {
+                ContentType = "application/zip"
+            }
+        };
+        
+        await archiveBlobClient.UploadAsync(archiveStream, uploadOptions);
+        
+        // Генеруємо SAS token для публічного доступу (дійсний 7 днів)
+        var sasBuilder = new Azure.Storage.Sas.BlobSasBuilder
+        {
+            BlobContainerName = _dataBlobContainer.Name,
+            BlobName = archiveName,
+            Resource = "b", // blob
+            StartsOn = DateTimeOffset.UtcNow.AddMinutes(-5),
+            ExpiresOn = DateTimeOffset.UtcNow.AddDays(7)
+        };
+        sasBuilder.SetPermissions(Azure.Storage.Sas.BlobSasPermissions.Read);
+        
+        // Створюємо SAS URI
+        var sasUri = archiveBlobClient.GenerateSasUri(sasBuilder);
 
-        _logger.LogInformation("Archive uploaded: {ArchiveName}", archiveName);
-        return archiveBlobClient.Uri.ToString();
+        _logger.LogInformation("Archive uploaded with public access: {ArchiveName}", archiveName);
+        return sasUri.ToString();
     }
 
     public async Task<List<string>> GetUploadedImagesAsync(string chatId)
@@ -274,6 +300,39 @@ public class StorageService : IStorageService
         await UpdateIndexAsync(chatId, newContent);
 
         _logger.LogInformation("Content appended to index for chat {ChatId}", chatId);
+    }
+
+    public async Task<string?> GetLastTrainingIdAsync(string chatId)
+    {
+        try
+        {
+            var indexContent = await GetIndexAsync(chatId);
+            if (string.IsNullOrEmpty(indexContent))
+                return null;
+
+            // Шукаємо рядок "Training ID: XXX"
+            var lines = indexContent.Split('\n');
+            foreach (var line in lines.Reverse())
+            {
+                if (line.Contains("Training ID:", StringComparison.OrdinalIgnoreCase))
+                {
+                    var parts = line.Split(':', 2);
+                    if (parts.Length == 2)
+                    {
+                        var trainingId = parts[1].Trim();
+                        _logger.LogInformation("Found last training ID {TrainingId} for chat {ChatId}", trainingId, chatId);
+                        return trainingId;
+                    }
+                }
+            }
+
+            return null;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting last training ID for chat {ChatId}", chatId);
+            return null;
+        }
     }
 
     // Queue operations

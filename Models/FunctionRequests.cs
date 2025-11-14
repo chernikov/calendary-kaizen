@@ -70,7 +70,6 @@ public class UploadedImageInfo
 public class GetTrainingStatusRequest
 {
     public string UserId { get; set; } = string.Empty;
-    public string TrainingId { get; set; } = string.Empty;
 }
 
 public class GetTrainingStatusResponse

@@ -10,7 +10,7 @@ set -e  # Зупинити виконання при помилці
 # ======================
 
 # Основні параметри (змініть на свої)
-SUBSCRIPTION_ID="your-subscription-id"
+SUBSCRIPTION_ID="1741b591-3afd-461f-bca2-75c63bb75ddd"
 RESOURCE_GROUP="calendary-kaizen-rg"
 LOCATION="westeurope"
 ENVIRONMENT="prod"
@@ -128,25 +128,19 @@ echo "✓ Queue created: telegram-notifications"
 echo ""
 echo "Step 6: Creating Key Vault..."
 
-# Отримати поточний User Object ID для доступу до Key Vault
-CURRENT_USER_OBJECT_ID=$(az ad signed-in-user show --query id -o tsv)
+# Create Key Vault only if it doesn't already exist
+if az keyvault show --name "${KEY_VAULT_NAME}" --resource-group "${RESOURCE_GROUP}" >/dev/null 2>&1; then
+  echo "Key Vault already exists: ${KEY_VAULT_NAME}"
+else
+  az keyvault create \
+    --name "${KEY_VAULT_NAME}" \
+    --resource-group "${RESOURCE_GROUP}" \
+    --location "${LOCATION}" \
+    --enable-rbac-authorization false \
+    --tags ${TAGS}
 
-az keyvault create \
-  --name "${KEY_VAULT_NAME}" \
-  --resource-group "${RESOURCE_GROUP}" \
-  --location "${LOCATION}" \
-  --enable-rbac-authorization false \
-  --tags ${TAGS}
-
-echo "✓ Key Vault created: ${KEY_VAULT_NAME}"
-
-# Надати доступ поточному користувачу
-az keyvault set-policy \
-  --name "${KEY_VAULT_NAME}" \
-  --object-id "${CURRENT_USER_OBJECT_ID}" \
-  --secret-permissions get list set delete
-
-echo "✓ Key Vault access policy set for current user"
+  echo "✓ Key Vault created: ${KEY_VAULT_NAME}"
+fi
 
 # ======================
 # APPLICATION INSIGHTS
@@ -170,33 +164,16 @@ APPINSIGHTS_INSTRUMENTATION_KEY=$(az monitor app-insights component show \
 echo "✓ Application Insights created: ${APP_INSIGHTS_NAME}"
 
 # ======================
-# APP SERVICE PLAN
+# FUNCTION APP (CONSUMPTION PLAN)
 # ======================
 
 echo ""
-echo "Step 8: Creating App Service Plan (Consumption)..."
-
-az functionapp plan create \
-  --name "${APP_SERVICE_PLAN}" \
-  --resource-group "${RESOURCE_GROUP}" \
-  --location "${LOCATION}" \
-  --sku Y1 \
-  --is-linux \
-  --tags ${TAGS}
-
-echo "✓ App Service Plan created: ${APP_SERVICE_PLAN}"
-
-# ======================
-# FUNCTION APP
-# ======================
-
-echo ""
-echo "Step 9: Creating Function App..."
+echo "Step 8: Creating Function App (Consumption)..."
 
 az functionapp create \
   --name "${FUNCTION_APP_NAME}" \
   --resource-group "${RESOURCE_GROUP}" \
-  --plan "${APP_SERVICE_PLAN}" \
+  --consumption-plan-location "${LOCATION}" \
   --runtime dotnet-isolated \
   --runtime-version 8 \
   --storage-account "${STORAGE_ACCOUNT_NAME}" \
@@ -243,7 +220,7 @@ az functionapp identity assign \
   --name "${FUNCTION_APP_NAME}" \
   --resource-group "${RESOURCE_GROUP}"
 
-# Отримати Principal ID
+# Отримати Principal ID (для інформації)
 FUNCTION_APP_PRINCIPAL_ID=$(az functionapp identity show \
   --name "${FUNCTION_APP_NAME}" \
   --resource-group "${RESOURCE_GROUP}" \
@@ -251,13 +228,7 @@ FUNCTION_APP_PRINCIPAL_ID=$(az functionapp identity show \
 
 echo "✓ Managed Identity enabled. Principal ID: ${FUNCTION_APP_PRINCIPAL_ID}"
 
-# Надати доступ Function App до Key Vault
-az keyvault set-policy \
-  --name "${KEY_VAULT_NAME}" \
-  --object-id "${FUNCTION_APP_PRINCIPAL_ID}" \
-  --secret-permissions get list
-
-echo "✓ Key Vault access granted to Function App"
+echo "⚠️  NOTE: Grant this identity access to Key Vault manually if needed."
 
 # ======================
 # STORE SECRETS IN KEY VAULT

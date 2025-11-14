@@ -31,16 +31,28 @@ echo "=========================================="
 
 echo ""
 echo "Step 1: Cleaning previous builds..."
-cd /home/user/calendary-kaizen
-dotnet clean
+# Determine repo root (one level above deploy/) and cd there
+REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+echo "Repo root: ${REPO_ROOT}"
+cd "${REPO_ROOT}"
+# ensure a local NuGet package folder so dotnet doesn't look for Visual Studio fallback paths
+export NUGET_PACKAGES="${REPO_ROOT}/.nuget/packages"
+mkdir -p "${NUGET_PACKAGES}"
+# Also set a local fallback packages folder to avoid dotnet looking for Visual Studio global folders on Windows
+export NUGET_FALLBACK_PACKAGES="${REPO_ROOT}/.nuget/fallback"
+mkdir -p "${NUGET_FALLBACK_PACKAGES}"
+
+DOTNET_PROJECT="${REPO_ROOT}/CalendaryKaizen.csproj"
+echo "Using project: ${DOTNET_PROJECT}"
+dotnet clean "${DOTNET_PROJECT}"
 
 echo ""
 echo "Step 2: Restoring packages..."
-dotnet restore
+dotnet restore "${DOTNET_PROJECT}"
 
 echo ""
 echo "Step 3: Building project..."
-dotnet build --configuration Release
+dotnet build "${DOTNET_PROJECT}" --configuration Release
 
 echo ""
 echo "Step 4: Publishing to Azure..."

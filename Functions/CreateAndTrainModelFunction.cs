@@ -52,7 +52,28 @@ public class CreateAndTrainModelFunction
             var chatId = data.UserId; // UserId використовується як chatId з Telegram
             _logger.LogInformation("Processing request for chat: {ChatId}", chatId);
 
-            // Крок 0: Створити архів з папки chatId/upload/
+            // Крок 0a: Перевірити чи є активне тренування
+            var lastTrainingId = await _storageService.GetLastTrainingIdAsync(chatId);
+            if (!string.IsNullOrEmpty(lastTrainingId))
+            {
+                var lastTraining = await _storageService.GetTrainingAsync(chatId, lastTrainingId);
+                if (lastTraining != null && 
+                    lastTraining.Status != "succeeded" && 
+                    lastTraining.Status != "failed" && 
+                    lastTraining.Status != "canceled")
+                {
+                    _logger.LogWarning("Training already in progress for chat {ChatId}: {TrainingId}, status: {Status}", 
+                        chatId, lastTrainingId, lastTraining.Status);
+                    
+                    var conflictResponse = req.CreateResponse(HttpStatusCode.Conflict);
+                    await conflictResponse.WriteAsJsonAsync(ApiResponse<object>.Fail(
+                        $"Training is already in progress (ID: {lastTrainingId}, Status: {lastTraining.Status}). " +
+                        $"Please wait for it to complete before starting a new training."));
+                    return conflictResponse;
+                }
+            }
+
+            // Крок 0b: Створити архів з папки chatId/upload/
             string archiveUrl;
             try
             {

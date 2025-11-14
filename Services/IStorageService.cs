@@ -28,6 +28,7 @@ public interface IStorageService
     Task UpdateIndexAsync(string chatId, string content);
     Task<string?> GetIndexAsync(string chatId);
     Task AppendToIndexAsync(string chatId, string content);
+    Task<string?> GetLastTrainingIdAsync(string chatId);
 
     // Queue operations
     Task SendTelegramMessageAsync(TelegramMessage message);

@@ -46,26 +46,27 @@ public class GetTrainingStatusFunction
 
             var chatId = data.UserId;
 
-            // Якщо TrainingId не вказано, знайти останнє тренування
-            TrainingEntity? training;
-            if (string.IsNullOrEmpty(data.TrainingId))
+            // Отримати останній TrainingId з index.md
+            var trainingId = await _storageService.GetLastTrainingIdAsync(chatId);
+            
+            if (string.IsNullOrEmpty(trainingId))
             {
-                // Отримати всі тренування для користувача (потрібно додати метод в IStorageService)
-                _logger.LogInformation("TrainingId not provided, looking for latest training for chat {ChatId}", chatId);
+                _logger.LogInformation("No training found in index.md for chat {ChatId}", chatId);
                 
-                var badResponse = req.CreateResponse(HttpStatusCode.BadRequest);
-                await badResponse.WriteAsJsonAsync(ApiResponse<object>.Fail("TrainingId is required. Please provide the training ID from /domodel command."));
-                return badResponse;
+                var notFoundResponse = req.CreateResponse(HttpStatusCode.NotFound);
+                await notFoundResponse.WriteAsJsonAsync(ApiResponse<object>.Fail("No training found for this user. Please start a training first using /domodel command."));
+                return notFoundResponse;
             }
-            else
-            {
-                training = await _storageService.GetTrainingAsync(chatId, data.TrainingId);
-            }
+
+            _logger.LogInformation("Found training ID {TrainingId} from index.md for chat {ChatId}", trainingId, chatId);
+
+            // Отримати тренування з бази
+            var training = await _storageService.GetTrainingAsync(chatId, trainingId);
 
             if (training == null)
             {
                 var notFoundResponse = req.CreateResponse(HttpStatusCode.NotFound);
-                await notFoundResponse.WriteAsJsonAsync(ApiResponse<object>.Fail($"Training {data.TrainingId} not found for user {chatId}"));
+                await notFoundResponse.WriteAsJsonAsync(ApiResponse<object>.Fail($"Training {trainingId} not found in database"));
                 return notFoundResponse;
             }
 

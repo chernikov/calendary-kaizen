@@ -53,7 +53,26 @@ public class ReplicateService : IReplicateService
         };
 
         var response = await _httpClient.PostAsJsonAsync($"{BaseUrl}/models", request);
-        response.EnsureSuccessStatusCode();
+        
+        if (!response.IsSuccessStatusCode)
+        {
+            var errorContent = await response.Content.ReadAsStringAsync();
+            var statusCode = (int)response.StatusCode;
+            
+            _logger.LogError("Replicate API error {StatusCode}: {ErrorContent}", statusCode, errorContent);
+            
+            if (statusCode == 401)
+            {
+                throw new InvalidOperationException(
+                    $"Replicate API authentication failed (401 Unauthorized). " +
+                    $"Please verify that ReplicateApiKey is correctly configured in Azure Key Vault. " +
+                    $"API Key format should start with 'r8_'. Error: {errorContent}");
+            }
+            
+            throw new InvalidOperationException(
+                $"Replicate API request failed with status {statusCode}. " +
+                $"Response: {errorContent}");
+        }
 
         var result = await response.Content.ReadFromJsonAsync<CreateModelResponse>();
         if (result == null)
@@ -76,7 +95,26 @@ public class ReplicateService : IReplicateService
 
         var url = $"{BaseUrl}/models/{_trainerModel}/versions/{_trainerVersion}/trainings";
         var response = await _httpClient.PostAsJsonAsync(url, request);
-        response.EnsureSuccessStatusCode();
+        
+        if (!response.IsSuccessStatusCode)
+        {
+            var errorContent = await response.Content.ReadAsStringAsync();
+            var statusCode = (int)response.StatusCode;
+            
+            _logger.LogError("Replicate API training error {StatusCode}: {ErrorContent}", statusCode, errorContent);
+            
+            if (statusCode == 401)
+            {
+                throw new InvalidOperationException(
+                    $"Replicate API authentication failed (401 Unauthorized). " +
+                    $"Please verify that ReplicateApiKey is correctly configured in Azure Key Vault. " +
+                    $"API Key format should start with 'r8_'. Error: {errorContent}");
+            }
+            
+            throw new InvalidOperationException(
+                $"Replicate API training request failed with status {statusCode}. " +
+                $"URL: {url}, Response: {errorContent}");
+        }
 
         var result = await response.Content.ReadFromJsonAsync<TrainModelResponse>();
         if (result == null)
@@ -106,7 +144,26 @@ public class ReplicateService : IReplicateService
         httpRequest.Headers.Add("Prefer", "wait");
 
         var response = await _httpClient.SendAsync(httpRequest);
-        response.EnsureSuccessStatusCode();
+        
+        if (!response.IsSuccessStatusCode)
+        {
+            var errorContent = await response.Content.ReadAsStringAsync();
+            var statusCode = (int)response.StatusCode;
+            
+            _logger.LogError("Replicate API image generation error {StatusCode}: {ErrorContent}", statusCode, errorContent);
+            
+            if (statusCode == 401)
+            {
+                throw new InvalidOperationException(
+                    $"Replicate API authentication failed (401 Unauthorized). " +
+                    $"Please verify that ReplicateApiKey is correctly configured in Azure Key Vault. " +
+                    $"API Key format should start with 'r8_'. Error: {errorContent}");
+            }
+            
+            throw new InvalidOperationException(
+                $"Replicate API image generation request failed with status {statusCode}. " +
+                $"Response: {errorContent}");
+        }
 
         var result = await response.Content.ReadFromJsonAsync<GenerateImageResponse>();
         if (result == null)
