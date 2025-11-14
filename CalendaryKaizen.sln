@@ -1,0 +1,24 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.5.2.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CalendaryKaizen", "CalendaryKaizen.csproj", "{B376BAD4-75EC-A750-FAF1-CFE5BDCD842C}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{B376BAD4-75EC-A750-FAF1-CFE5BDCD842C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B376BAD4-75EC-A750-FAF1-CFE5BDCD842C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B376BAD4-75EC-A750-FAF1-CFE5BDCD842C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B376BAD4-75EC-A750-FAF1-CFE5BDCD842C}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {3B81888B-3307-4ED7-9ED0-D4F098703E6C}
+	EndGlobalSection
+EndGlobal

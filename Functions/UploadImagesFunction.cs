@@ -49,6 +49,8 @@ public class UploadImagesFunction
             // Завантажити та зберегти кожне зображення в chatId/upload/
             var uploadedUrls = new List<string>();
             int index = 1;
+            var timestamp = DateTime.UtcNow.ToString("yyyyMMdd_HHmmss");
+            var batchId = Guid.NewGuid().ToString("N").Substring(0, 8); // Короткий унікальний ID
 
             foreach (var imageUrl in data.ImageUrls)
             {
@@ -57,8 +59,8 @@ public class UploadImagesFunction
                     _logger.LogInformation("Downloading image from: {ImageUrl}", imageUrl);
                     var imageBytes = await _httpClient.GetByteArrayAsync(imageUrl);
 
-                    // Зберегти в chatId/upload/image_N.jpg
-                    var fileName = $"image_{index:D3}.jpg";
+                    // Зберегти в chatId/upload/image_{timestamp}_{batchId}_{N}.jpg
+                    var fileName = $"image_{timestamp}_{batchId}_{index:D3}.jpg";
                     var uploadedUrl = await _storageService.UploadUserImageAsync(chatId, imageBytes, fileName);
                     uploadedUrls.Add(uploadedUrl);
 
