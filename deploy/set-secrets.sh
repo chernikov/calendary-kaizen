@@ -68,6 +68,28 @@ else
 fi
 
 echo ""
+
+# ======================
+# OPENAI API KEY
+# ======================
+
+echo "3. OpenAI API Key"
+echo "   Get your API key from: https://platform.openai.com/api-keys"
+echo ""
+read -sp "Enter OpenAI API Key (sk-...): " OPENAI_API_KEY
+echo ""
+
+if [ -n "$OPENAI_API_KEY" ]; then
+    az keyvault secret set \
+      --vault-name "${KEY_VAULT_NAME}" \
+      --name "OpenAIApiKey" \
+      --value "${OPENAI_API_KEY}"
+    echo "✓ OpenAI API Key saved"
+else
+    echo "⚠️  Skipped OpenAI API Key"
+fi
+
+echo ""
 echo "=========================================="
 echo "✓ SECRETS CONFIGURED!"
 echo "=========================================="

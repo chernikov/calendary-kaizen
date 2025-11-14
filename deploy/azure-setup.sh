@@ -205,7 +205,9 @@ az functionapp config appsettings set \
     "ReplicateTrainerModel=replicate/fast-flux-trainer" \
     "ReplicateTrainerVersion=f463fbfc97389e10a2f443a8a84b6953b1058eafbf0c9af4d84457ff07cb04db" \
     "WebhookUrl=${FUNCTION_APP_URL}/api/ReplicateWebHook" \
-    "TelegramBotToken=@Microsoft.KeyVault(SecretUri=https://${KEY_VAULT_NAME}.vault.azure.net/secrets/TelegramBotToken)"
+    "TelegramBotToken=@Microsoft.KeyVault(SecretUri=https://${KEY_VAULT_NAME}.vault.azure.net/secrets/TelegramBotToken)" \
+    "OpenAIApiKey=@Microsoft.KeyVault(SecretUri=https://${KEY_VAULT_NAME}.vault.azure.net/secrets/OpenAIApiKey)" \
+    "OpenAIModel=gpt-5-mini"
 
 echo "✓ Function App settings configured"
 
@@ -244,6 +246,9 @@ echo "   az keyvault secret set --vault-name \"${KEY_VAULT_NAME}\" --name \"Repl
 echo ""
 echo "2. Telegram Bot Token:"
 echo "   az keyvault secret set --vault-name \"${KEY_VAULT_NAME}\" --name \"TelegramBotToken\" --value \"your-telegram-bot-token\""
+echo ""
+echo "3. OpenAI API Key:"
+echo "   az keyvault secret set --vault-name \"${KEY_VAULT_NAME}\" --name \"OpenAIApiKey\" --value \"your-openai-api-key\""
 echo ""
 
 # ======================

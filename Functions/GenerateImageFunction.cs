@@ -13,15 +13,18 @@ public class GenerateImageFunction
 {
     private readonly IReplicateService _replicateService;
     private readonly IStorageService _storageService;
+    private readonly IOpenAIService _openAIService;
     private readonly ILogger<GenerateImageFunction> _logger;
 
     public GenerateImageFunction(
         IReplicateService replicateService,
         IStorageService storageService,
+        IOpenAIService openAIService,
         ILogger<GenerateImageFunction> logger)
     {
         _replicateService = replicateService;
         _storageService = storageService;
+        _openAIService = openAIService;
         _logger = logger;
     }
 
@@ -81,11 +84,25 @@ public class GenerateImageFunction
 
             await _storageService.SaveGenerationAsync(generation);
 
+            // Enhance prompt using GPT-5-mini with trigger word "TOK"
+            string enhancedPrompt;
+            try
+            {
+                enhancedPrompt = await _openAIService.EnhancePromptForFluxAsync(data.Prompt, "TOK");
+                _logger.LogInformation("Original prompt: {OriginalPrompt}", data.Prompt);
+                _logger.LogInformation("Enhanced prompt: {EnhancedPrompt}", enhancedPrompt);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to enhance prompt with OpenAI, using original prompt");
+                enhancedPrompt = $"{data.Prompt}, TOK"; // Fallback: add TOK to original prompt
+            }
+
             // Генерація зображення
             var imageInput = new GenerateImageInput
             {
                 Model = "dev",
-                Prompt = data.Prompt,
+                Prompt = enhancedPrompt,
                 Seed = data.Seed,
                 LoraScale = 1.0,
                 NumOutputs = 1,
@@ -131,8 +148,15 @@ public class GenerateImageFunction
 
                 _logger.LogInformation("Image saved to blob storage: {ImageUrl}", imageUrl);
 
-                // Зберегти промпт в текстовий файл
-                await _storageService.SavePromptAsync(chatId, data.Prompt, generationId);
+                // Зберегти промпти в текстовий файл
+                var promptContent = $"""
+                    Original Prompt:
+                    {data.Prompt}
+
+                    Enhanced Prompt (with TOK):
+                    {enhancedPrompt}
+                    """;
+                await _storageService.SavePromptAsync(chatId, promptContent, generationId);
 
                 // Оновити index.md
                 var generationInfo = $"""
@@ -140,7 +164,8 @@ public class GenerateImageFunction
                     ### Generation {generationId}
 
                     - Date: {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} UTC
-                    - Prompt: {data.Prompt}
+                    - Original Prompt: {data.Prompt}
+                    - Enhanced Prompt: {enhancedPrompt}
                     - Seed: {generation.OutputSeed}
                     - Image: {imageUrl}
 
@@ -153,12 +178,14 @@ public class GenerateImageFunction
                 {
                     UserId = data.UserId,
                     ImageUrl = imageUrl,
-                    Text = $"🎨 Зображення згенеровано!\n\nPrompt: {data.Prompt}\nSeed: {generation.OutputSeed}",
+                    Text = $"🎨 Зображення згенеровано!\n\n📝 Ваш запит: {data.Prompt}\n\n✨ Покращений промпт: {enhancedPrompt}\n\n🎲 Seed: {generation.OutputSeed}",
                     MessageType = "generation_complete",
                     Metadata = new Dictionary<string, string>
                     {
                         ["GenerationId"] = generationId,
-                        ["Seed"] = generation.OutputSeed?.ToString() ?? ""
+                        ["Seed"] = generation.OutputSeed?.ToString() ?? "",
+                        ["OriginalPrompt"] = data.Prompt,
+                        ["EnhancedPrompt"] = enhancedPrompt
                     }
                 });
             }

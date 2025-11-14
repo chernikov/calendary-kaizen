@@ -12,6 +12,7 @@ var host = new HostBuilder()
 
         // Register services
         services.AddHttpClient<IReplicateService, ReplicateService>();
+        services.AddHttpClient<IOpenAIService, OpenAIService>();
         services.AddSingleton<IStorageService, StorageService>();
     })
     .Build();

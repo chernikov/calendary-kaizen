@@ -15,6 +15,7 @@ deploy.zip
 
 # Local settings
 local.settings.json
+deploy/azure-config.env
 
 # Azure Functions
 __blobstorage__
