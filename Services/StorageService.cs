@@ -201,6 +201,38 @@ public class StorageService : IStorageService
         return imageUrls;
     }
 
+    public async Task<List<(string fileName, long size, string url)>> GetUploadedImagesWithSizeAsync(string chatId)
+    {
+        var uploadPrefix = $"{chatId}/upload/";
+        var images = new List<(string fileName, long size, string url)>();
+
+        var blobs = _dataBlobContainer.GetBlobsAsync(prefix: uploadPrefix);
+        await foreach (var blobItem in blobs)
+        {
+            var blobClient = _dataBlobContainer.GetBlobClient(blobItem.Name);
+            var fileName = Path.GetFileName(blobItem.Name);
+            var size = blobItem.Properties.ContentLength ?? 0;
+            images.Add((fileName, size, blobClient.Uri.ToString()));
+        }
+
+        _logger.LogInformation("Found {Count} uploaded images with sizes for chat {ChatId}", images.Count, chatId);
+        return images;
+    }
+
+    public async Task<bool> IsImageSizeExistsAsync(string chatId, long size)
+    {
+        var uploadPrefix = $"{chatId}/upload/";
+        var blobs = _dataBlobContainer.GetBlobsAsync(prefix: uploadPrefix);
+        await foreach (var blobItem in blobs)
+        {
+            if (blobItem.Properties.ContentLength == size)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
     // Index.md operations
     public async Task UpdateIndexAsync(string chatId, string content)
     {

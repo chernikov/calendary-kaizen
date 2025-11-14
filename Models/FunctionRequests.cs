@@ -56,4 +56,29 @@ public class UploadImagesResponse
 {
     public string ArchiveUrl { get; set; } = string.Empty;
     public int ImageCount { get; set; }
+    public List<UploadedImageInfo> UploadedImages { get; set; } = new();
+}
+
+public class UploadedImageInfo
+{
+    public string FileName { get; set; } = string.Empty;
+    public long SizeBytes { get; set; }
+    public string Url { get; set; } = string.Empty;
+}
+
+// Запит на перевірку статусу тренування
+public class GetTrainingStatusRequest
+{
+    public string UserId { get; set; } = string.Empty;
+    public string TrainingId { get; set; } = string.Empty;
+}
+
+public class GetTrainingStatusResponse
+{
+    public string TrainingId { get; set; } = string.Empty;
+    public string ModelId { get; set; } = string.Empty;
+    public string Status { get; set; } = string.Empty;
+    public DateTime CreatedAt { get; set; }
+    public DateTime? CompletedAt { get; set; }
+    public string? Version { get; set; }
 }

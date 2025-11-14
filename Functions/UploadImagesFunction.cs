@@ -33,7 +33,8 @@ public class UploadImagesFunction
         {
             // Читаємо запит
             var requestBody = await new StreamReader(req.Body).ReadToEndAsync();
-            var data = JsonSerializer.Deserialize<UploadImagesRequest>(requestBody);
+            var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            var data = JsonSerializer.Deserialize<UploadImagesRequest>(requestBody, options);
 
             if (data == null || string.IsNullOrEmpty(data.UserId) || data.ImageUrls == null || data.ImageUrls.Count == 0)
             {
@@ -59,6 +60,13 @@ public class UploadImagesFunction
                     _logger.LogInformation("Downloading image from: {ImageUrl}", imageUrl);
                     var imageBytes = await _httpClient.GetByteArrayAsync(imageUrl);
 
+                    // Check if an image with the same size already exists
+                    if (await _storageService.IsImageSizeExistsAsync(chatId, imageBytes.Length))
+                    {
+                        _logger.LogInformation("Skipping image from {ImageUrl} as an equivalent size image already exists", imageUrl);
+                        continue;
+                    }
+
                     // Зберегти в chatId/upload/image_{timestamp}_{batchId}_{N}.jpg
                     var fileName = $"image_{timestamp}_{batchId}_{index:D3}.jpg";
                     var uploadedUrl = await _storageService.UploadUserImageAsync(chatId, imageBytes, fileName);
@@ -83,6 +91,9 @@ public class UploadImagesFunction
 
             _logger.LogInformation("Successfully uploaded {Count} images", uploadedUrls.Count);
 
+            // Отримати список всіх завантажених файлів з розмірами
+            var allImages = await _storageService.GetUploadedImagesWithSizeAsync(chatId);
+
             // Оновити index.md
             var indexContent = $"""
                 # Chat {chatId}
@@ -90,17 +101,23 @@ public class UploadImagesFunction
                 ## Uploaded Images
 
                 - Date: {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} UTC
-                - Count: {uploadedUrls.Count}
+                - Count: {allImages.Count}
 
                 """;
 
             await _storageService.UpdateIndexAsync(chatId, indexContent);
 
-            // Повернути результат (без створення архіву - архів створюється при тренуванні)
+            // Повернути результат з списком файлів і розмірами
             var result = new UploadImagesResponse
             {
                 ArchiveUrl = "", // Архів буде створений при CreateAndTrainModel
-                ImageCount = uploadedUrls.Count
+                ImageCount = allImages.Count,
+                UploadedImages = allImages.Select(img => new UploadedImageInfo
+                {
+                    FileName = img.fileName,
+                    SizeBytes = img.size,
+                    Url = img.url
+                }).ToList()
             };
 
             var response = req.CreateResponse(HttpStatusCode.OK);

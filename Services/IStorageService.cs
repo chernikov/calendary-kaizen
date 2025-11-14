@@ -21,6 +21,8 @@ public interface IStorageService
     Task<string> DownloadImageAsync(string imageUrl);
     Task<string> CreateArchiveFromUploadAsync(string chatId);
     Task<List<string>> GetUploadedImagesAsync(string chatId);
+    Task<List<(string fileName, long size, string url)>> GetUploadedImagesWithSizeAsync(string chatId);
+    Task<bool> IsImageSizeExistsAsync(string chatId, long size);
 
     // Index.md operations
     Task UpdateIndexAsync(string chatId, string content);

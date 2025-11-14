@@ -34,7 +34,13 @@ public class CreateAndTrainModelFunction
         {
             // Читаємо запит
             var requestBody = await new StreamReader(req.Body).ReadToEndAsync();
-            var data = JsonSerializer.Deserialize<CreateAndTrainRequest>(requestBody);
+            _logger.LogInformation("Request body: {RequestBody}", requestBody);
+            
+            var options = new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            };
+            var data = JsonSerializer.Deserialize<CreateAndTrainRequest>(requestBody, options);
 
             if (data == null || string.IsNullOrEmpty(data.UserId))
             {

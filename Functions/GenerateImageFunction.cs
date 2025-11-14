@@ -35,7 +35,8 @@ public class GenerateImageFunction
         {
             // Читаємо запит
             var requestBody = await new StreamReader(req.Body).ReadToEndAsync();
-            var data = JsonSerializer.Deserialize<GenerateRequest>(requestBody);
+            var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            var data = JsonSerializer.Deserialize<GenerateRequest>(requestBody, options);
 
             if (data == null || string.IsNullOrEmpty(data.UserId) || string.IsNullOrEmpty(data.TrainingId) || string.IsNullOrEmpty(data.Prompt))
             {
